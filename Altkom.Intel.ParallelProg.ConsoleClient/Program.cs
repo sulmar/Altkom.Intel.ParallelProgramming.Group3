@@ -10,16 +10,36 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 {
     class Program
     {
-        static void Main(string[] args)
+        // C# 7.1
+        static async Task Main(string[] args)
         {
             Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId}");
+
+            for (int i = 0; i < 100; i++)
+            {
+                Console.Write(".");
+
+                Thread.Sleep(TimeSpan.FromSeconds(1));
+            }
+
+           //  CancelationTokenTest();
+
+            // cts.CancelAfter(TimeSpan.FromSeconds(3));
+
+          
+
+
+
+            //  await CatchExceptionTest();
+
+            // await AsyncAwaitTest();
+
 
             // CreateTaskTest();
 
             // Task task = Task.Factory.StartNew(() => Download("http://jsonplaceholder.typicode.com"));
 
             // Task task = Task.Run(() => Download("http://jsonplaceholder.typicode.com"));
-
 
             // MultiTaskTest();
 
@@ -30,13 +50,25 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
             //int result = GetLength("http://jsonplaceholder.typicode.com");
             //Console.WriteLine($"Result={result}");
 
+            // BlockingTaskResultTest();
 
-            var t = Task.Run(() => GetValueTuple());
-            t.Result.
+            // TaskTupleTest();
 
-            Task<int> task = Task.Run(() => GetLength("http://jsonplaceholder.typicode.com"));
-            Console.WriteLine($"Result={task.Result}");
-            
+            // ContinueTaskRun();
+
+            // MultiContinueTaskRun();
+
+            // Task.Run(()=>AsyncAwaitTest());
+
+
+
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    Console.WriteLine("Marek !");
+
+            //    Thread.Sleep(TimeSpan.FromSeconds(1));
+            //}
+
 
             // Download();
 
@@ -58,6 +90,174 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 
             Console.ReadKey();
 
+        }
+
+        private static void CancelationTokenTest()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(7));
+
+            CancellationToken token = cts.Token;
+
+            // DoWorkAsync(token);
+
+             DownloadTaskAsync("https://www.mocky.io/v2/5185415ba171ea3a00704eed?mocky-delay=10000ms", token);
+
+            // manual
+            //Console.WriteLine("Press Enter to cancel");
+            //Console.ReadLine();
+            //cts.Cancel();
+        }
+
+        private static Task DoWorkAsync(CancellationToken token)
+        {
+            return Task.Run(() => DoWork(token), token);
+        }
+
+        private static Task DoWorkAsync()
+        {
+            return Task.Run(() => DoWork());
+        }
+
+        private static void DoWork()
+        {
+            DoWork(CancellationToken.None);
+        }
+
+        private static void DoWork(CancellationToken token)
+        {
+            for (int i = 0; i < 100; i++)
+            {
+                if (token!=CancellationToken.None && token.IsCancellationRequested)
+                {
+                    token.ThrowIfCancellationRequested();
+                }
+
+                Console.Write(".");
+
+                Thread.Sleep(TimeSpan.FromSeconds(0.5));
+            }
+        }
+
+        private static void SyncRun()
+        {
+            var result = GetLength("http://jsonplaceholder.typicode.com");
+
+            Console.WriteLine($"Result={result}");
+
+            Console.WriteLine("koniec");
+        }
+
+
+        private static async Task CatchExceptionTest()
+        {
+            try
+            {
+                await CatchExceptionAsyncTest();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+        }
+
+        private static async Task CatchExceptionAsyncTest()
+        {
+            try
+            {
+                await ThrowExceptionAsync();
+            }
+            catch (Exception e)
+            {
+                throw e;
+            }
+
+
+        }
+
+        private static Task ThrowExceptionAsync()
+        {
+            return Task.Run(() => ThrowException());
+        }
+
+        private static void ThrowException()
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(3));
+            throw new InvalidOperationException();
+        }
+
+        private static void MultiContinueTaskRun()
+        {
+            GetLengthAsync("http://jsonplaceholder.typicode.com")
+                    .ContinueWith(t => Task.Run(() => Console.WriteLine($"Result={t.Result}")));
+        }
+
+        private static async Task AsyncAwaitTest()
+        {
+            var result1 = GetLengthAsync("http://jsonplaceholder.typicode.com");
+            var result2 = GetLengthAsync("http://jsonplaceholder.typicode.com");
+            var result3 = GetLengthAsync("http://jsonplaceholder.typicode.com");
+
+            Task.WaitAll(result1, result2, result3);
+
+
+            Dictionary<int, int> results = new Dictionary<int, int>();
+
+            for (int i = 0; i < 10; i++)
+            {
+                var result = await GetLengthAsync("http://jsonplaceholder.typicode.com");
+
+                results.Add(i, result);
+            }
+
+            foreach (var item in results)
+            {
+                Console.WriteLine($"{item.Key} : {item.Value}");
+            }
+
+           
+            
+
+           // int result2 = await GetLengthAsync("http://jsonplaceholder.typicode.com");
+
+            // var result = result1 + result2;
+
+
+            // Console.WriteLine($"Result={result}");
+
+        }
+
+        private static Task DownloadAsync(string uri)
+        {
+            return Task.Run(() => Download(uri));
+        }
+
+
+        private static Task<int> GetLengthAsync(string uri)
+        {
+            return Task.Run(() => GetLength(uri));
+        }
+
+
+        
+
+        private static void ContinueTaskRun()
+        {
+            Task<int> task =
+                Task.Run(() => GetLength("http://jsonplaceholder.typicode.com"));
+
+            task.ContinueWith(t => Console.WriteLine($"Result={t.Result}"));
+        }
+
+        private static void BlockingTaskResultTest()
+        {
+            Task<int> task = Task.Run(() => GetLength("http://jsonplaceholder.typicode.com"));
+            Console.WriteLine($"Result={task.Result}");
+        }
+
+        private static void TaskTupleTest()
+        {
+            var task = Task.Run(() => GetValueTuple());
         }
 
         private static void WhenAllTest()
@@ -171,6 +371,33 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
             Download(uri);
         }
 
+
+        static async Task DownloadTaskAsync(string uri)
+        {
+            using (var client = new WebClient())
+            {
+                Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} downloading {uri}...");
+                string content = await client.DownloadStringTaskAsync(uri);
+
+                Thread.Sleep(TimeSpan.FromSeconds(3));
+
+                Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} downloaded {uri} size: {content.Length}.");
+            }
+        }
+
+        static async Task DownloadTaskAsync(string uri, CancellationToken token)
+        {
+            using (var client = new WebClient())
+            using (var registration = token.Register(() => client.CancelAsync()))
+            {
+                Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} downloading {uri}...");
+                string content = await client.DownloadStringTaskAsync(uri);
+
+
+                Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} downloaded {uri} size: {content.Length}.");
+            }
+        }
+
         static void Download(string uri)
         {
             using (var client = new WebClient())
@@ -191,7 +418,7 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
                 Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} downloading {uri}...");
                 string content = client.DownloadString(uri);
 
-                Thread.Sleep(TimeSpan.FromSeconds(3));
+                Thread.Sleep(TimeSpan.FromSeconds(1));
 
                 Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} downloaded {uri} size: {content.Length}.");
 
