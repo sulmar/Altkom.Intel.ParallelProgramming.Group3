@@ -15,7 +15,24 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
         {
             Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId}");
 
-            DoWork();
+            var mA = GetRandomMatrix(20, 30);
+            var mB = GetRandomMatrix(30, 40);
+
+            var result = MultiplySequential(mA, mB);
+
+           // Parallel.For(0, 100, index => MyJob(index));
+
+            IList<string> urls = new List<string>
+            {
+                "http://www.intel.com",
+                "http://www.microsoft.com",
+                "http://www.altkom.pl",
+            };
+
+            Parallel.ForEach(urls, url => Download(url));
+
+
+            // ProgressTest();
 
             //  CancelationTokenTest();
 
@@ -26,12 +43,12 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
             // await AsyncAwaitTest();
 
 
-             CreateTaskTest();
+            //CreateTaskTest();
 
 
-            CreateTaskFactory();
+            //CreateTaskFactory();
 
-            CreateTaskFactory2();
+            //CreateTaskFactory2();
 
 
 
@@ -94,6 +111,21 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 
         }
 
+
+        private static void MyJob(int index)
+        {
+            // Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} -> {index}");
+
+            Console.Write(index);
+        }
+
+        private static void ProgressTest()
+        {
+            IProgress<int> progress = new Progress<int>(p => Console.Write($".{p}"));
+
+            DoWork(progress);
+        }
+
         private static void CancelationTokenTest()
         {
             CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(7));
@@ -127,7 +159,9 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 
         private static void DoWork(CancellationToken token, IProgress<int> progress = null)
         {
-            for (int i = 0; i < 100; i++)
+            const int size = 100;
+
+            for (int i = 0; i < size; i++)
             {
                 if (token!=CancellationToken.None && token.IsCancellationRequested)
                 {
@@ -136,7 +170,7 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 
                 // Console.Write(".");
 
-                progress?.Report(i);
+                progress?.Report(i*100 / size);
 
                 Thread.Sleep(TimeSpan.FromSeconds(0.5));
             }
@@ -196,7 +230,18 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
                     .ContinueWith(t => Task.Run(() => Console.WriteLine($"Result={t.Result}")));
         }
 
-        private static async Task AsyncAwaitTest()
+        private static async Task AsyncAwaitTest2()
+        {
+            var result1 = await GetLengthAsync("http://jsonplaceholder.typicode.com").ConfigureAwait(false);
+            var result2 = await GetLengthAsync("http://jsonplaceholder.typicode.com");
+            var result3 = await GetLengthAsync("http://jsonplaceholder.typicode.com");
+
+            // UI
+            var result = result1 + result2 + result3;
+        }
+
+
+            private static async Task AsyncAwaitTest()
         {
             var result1 = GetLengthAsync("http://jsonplaceholder.typicode.com");
             var result2 = GetLengthAsync("http://jsonplaceholder.typicode.com");
@@ -461,6 +506,50 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
         static (string klucz, int wartosc) GetValueTuple()
         {
             return ("Hello", 100);
+        }
+
+
+        static double[,] MultiplySequential(double[,] matrixA, double[,] matrixB)
+        {
+            int matrixARows = matrixA.GetLength(0);
+            int matrixBCols = matrixB.GetLength(1);
+
+            if (matrixA.GetLength(1) != matrixB.GetLength(0))
+            {
+                throw new InvalidOperationException("Błędne macierze");
+            }
+
+            double[,] result = new double[matrixARows, matrixBCols];
+
+            for (int i = 0; i < matrixARows; i++)
+            {
+                for (int j = 0; j < matrixBCols; j++)
+                {
+                    for (int k = 0; k < matrixA.GetLength(1); k++)
+                    {
+                        result[i,j] += matrixA[i, k] * matrixB[k, j];
+                    }                    
+                }
+            }
+
+            return result;
+        }
+
+        static double[,] GetRandomMatrix(int rows, int cols)
+        {
+            double[,] matrix = new double[rows, cols];
+
+            Random random = new Random();
+
+            for (int i = 0; i < rows; i++)
+            {
+                for (int j = 0; j < cols; j++)
+                {
+                    matrix[i, j] = random.Next(100);
+                }
+            }
+
+            return matrix;
         }
     }
 }
