@@ -1,35 +1,118 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Altkom.Intel.ParallelProg.ConsoleClient
 {
+
+   
+
     class Program
     {
+        [DllImport("kernel32.dll")]
+        static extern void QueryPerformanceCounter(ref int longTicks);
+
+        static void Measure(Action action)
+        {
+            //var stopwatch = new Stopwatch();
+            //stopwatch.Start();
+            var startTicks = 0;
+            QueryPerformanceCounter(ref startTicks);
+
+            // Action
+           // action?.Invoke();
+
+            // stopwatch.Stop();
+            var stopTicks = 0;
+            QueryPerformanceCounter(ref stopTicks);
+
+            var ticks = stopTicks - startTicks;
+
+            Console.WriteLine($"ticks {ticks}");
+        }
+
+
+        static void DoLongWork(string url)
+        {
+            Thread.Sleep(TimeSpan.FromSeconds(0.5));
+            Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} -> {url}");
+
+        }
+
         // C# 7.1
         static async Task Main(string[] args)
         {
             Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId}");
 
-            var mA = GetRandomMatrix(20, 30);
-            var mB = GetRandomMatrix(30, 40);
 
-            var result = MultiplySequential(mA, mB);
+            // PLinq
 
-           // Parallel.For(0, 100, index => MyJob(index));
-
-            IList<string> urls = new List<string>
+            var urls = new List<string>();
+            
+            for (int i = 0; i < 100; i++)
             {
-                "http://www.intel.com",
-                "http://www.microsoft.com",
-                "http://www.altkom.pl",
-            };
+                urls.Add($"http://www.altkom.pl/{i}");
+            }
 
-            Parallel.ForEach(urls, url => Download(url));
+            // urls.ForEach(Console.WriteLine);
+
+            ParallelQuery<string> sites = urls
+                .AsParallel()
+                .AsOrdered()
+                .WithDegreeOfParallelism(10)
+                ;
+            sites.ForAll(DoLongWork);
+
+            //urls
+            //    // .Where(url => url.Contains("altkom"))
+            //    .AsParallel()
+            //    .ForAll(Console.WriteLine);
+
+
+
+
+
+
+
+
+
+
+            var mA = GetRandomMatrix(200, 300);
+            var mB = GetRandomMatrix(300, 400);
+
+            //var stopwatch = new Stopwatch();
+            //stopwatch.Start();
+            var startTicks = 0;
+            QueryPerformanceCounter(ref startTicks);
+
+            // Action
+            MultiplySequential(mA, mB);
+
+            // stopwatch.Stop();
+            var stopTicks = 0;
+            QueryPerformanceCounter(ref stopTicks);
+
+            var ticks = stopTicks - startTicks;
+
+            Console.WriteLine($"ticks {ticks}");
+            
+            
+            // Parallel.For(0, 100, index => MyJob(index));
+
+            //IList<string> urls = new List<string>
+            //{
+            //    "http://www.intel.com",
+            //    "http://www.microsoft.com",
+            //    "http://www.altkom.pl",
+            //};
+
+            //Parallel.ForEach(urls, url => Download(url));
 
 
             // ProgressTest();
@@ -509,14 +592,14 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
         }
 
 
-        static double[,] MultiplySequential(double[,] matrixA, double[,] matrixB)
+        static void MultiplySequential(double[,] matrixA, double[,] matrixB)
         {
             int matrixARows = matrixA.GetLength(0);
             int matrixBCols = matrixB.GetLength(1);
 
             if (matrixA.GetLength(1) != matrixB.GetLength(0))
             {
-                throw new InvalidOperationException("Błędne macierze");
+                throw new ArgumentException("Błędne macierze");
             }
 
             double[,] result = new double[matrixARows, matrixBCols];
@@ -532,7 +615,7 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
                 }
             }
 
-            return result;
+           // return result;
         }
 
         static double[,] GetRandomMatrix(int rows, int cols)
