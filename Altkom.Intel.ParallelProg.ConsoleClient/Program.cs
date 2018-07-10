@@ -15,40 +15,34 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
         {
             Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId}");
 
-            for (int i = 0; i < 100; i++)
-            {
-                Console.Write(".");
+            DoWork();
 
-                Thread.Sleep(TimeSpan.FromSeconds(1));
-            }
-
-           //  CancelationTokenTest();
+            //  CancelationTokenTest();
 
             // cts.CancelAfter(TimeSpan.FromSeconds(3));
-
-          
-
-
 
             //  await CatchExceptionTest();
 
             // await AsyncAwaitTest();
 
 
-            // CreateTaskTest();
+             CreateTaskTest();
 
-            // Task task = Task.Factory.StartNew(() => Download("http://jsonplaceholder.typicode.com"));
 
-            // Task task = Task.Run(() => Download("http://jsonplaceholder.typicode.com"));
+            CreateTaskFactory();
+
+            CreateTaskFactory2();
+
+
 
             // MultiTaskTest();
 
-            //  WaitTaskTest();
+            // WaitTaskTest();
 
             // WhenAllTest();
 
-            //int result = GetLength("http://jsonplaceholder.typicode.com");
-            //Console.WriteLine($"Result={result}");
+            // int result = GetLength("http://jsonplaceholder.typicode.com");
+            // Console.WriteLine($"Result={result}");
 
             // BlockingTaskResultTest();
 
@@ -72,6 +66,8 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 
             // Download();
 
+            #region Threads
+
             // CreateThreadTest();
 
             // CreateParameterThreadTest();
@@ -84,7 +80,13 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 
             // MultiThreadTest();
 
+            #endregion
+
+            #region ThreadPool
+
             // ThreadPoolTest();
+
+            #endregion
 
             Console.WriteLine("Press any key to exit.");
 
@@ -118,12 +120,12 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
             return Task.Run(() => DoWork());
         }
 
-        private static void DoWork()
+        private static void DoWork(IProgress<int> progress = null)
         {
-            DoWork(CancellationToken.None);
+            DoWork(CancellationToken.None, progress);
         }
 
-        private static void DoWork(CancellationToken token)
+        private static void DoWork(CancellationToken token, IProgress<int> progress = null)
         {
             for (int i = 0; i < 100; i++)
             {
@@ -132,7 +134,9 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
                     token.ThrowIfCancellationRequested();
                 }
 
-                Console.Write(".");
+                // Console.Write(".");
+
+                progress?.Report(i);
 
                 Thread.Sleep(TimeSpan.FromSeconds(0.5));
             }
@@ -299,6 +303,16 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
         {
             Task task = new Task(() => Download("http://jsonplaceholder.typicode.com"));
             task.Start();
+        }
+
+        private static void CreateTaskFactory()
+        {
+            Task task = Task.Factory.StartNew(() => Download("http://jsonplaceholder.typicode.com"));
+        }
+
+        private static void CreateTaskFactory2()
+        {
+            Task task = Task.Run(() => Download("http://jsonplaceholder.typicode.com"));
         }
 
         private static void ThreadPoolTest()
