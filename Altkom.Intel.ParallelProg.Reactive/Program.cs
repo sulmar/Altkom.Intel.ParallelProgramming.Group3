@@ -35,12 +35,14 @@ namespace Altkom.Intel.ParallelProg.Reactive
 
         static void Main(string[] args)
         {
-            EventsTest();
+          
 
             //SendSMS("Hello World");
             //SendPost("Hello World");
 
-            DelegatesTest();
+            //DelegatesTest();
+
+            //EventsTest();
 
             Console.WriteLine("Press any key to exit.");
             Console.ReadLine();
