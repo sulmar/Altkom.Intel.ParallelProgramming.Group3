@@ -7,6 +7,26 @@ using System.Threading.Tasks;
 namespace Altkom.Intel.ParallelProg.Reactive
 {
 
+    class Phone
+    {
+        public delegate void CallingDelegate(string number);
+
+        // public CallingDelegate Calling;
+
+        public event CallingDelegate Calling; 
+
+      //   public event EventHandler<string> Calling;
+   
+
+        public void Call(string number)
+        {
+            Calling?.Invoke(number);
+
+            // rozmowa
+
+           //  Ending?.Invoke(number);
+        }
+    }
 
 
     class Program
@@ -15,6 +35,8 @@ namespace Altkom.Intel.ParallelProg.Reactive
 
         static void Main(string[] args)
         {
+            EventsTest();
+
             //SendSMS("Hello World");
             //SendPost("Hello World");
 
@@ -22,6 +44,22 @@ namespace Altkom.Intel.ParallelProg.Reactive
 
             Console.WriteLine("Press any key to exit.");
             Console.ReadLine();
+        }
+
+        private static void EventsTest()
+        {
+            Phone phone = new Phone();
+
+            phone.Calling += Console.WriteLine;
+
+            phone.Call("+58 555-543-959");
+            phone.Call("+22 555-543-959");
+            phone.Call("+58 555-543-959");
+            phone.Call("+63 555-543-959");
+
+            // phone.Calling?.Invoke("555-999-000");
+
+            // phone.Ending?.Invoke("54553453");
         }
 
         private static void DelegatesTest()
