@@ -51,23 +51,34 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
             Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId}");
 
 
+
+
+
             // PLinq
 
             var urls = new List<string>();
-            
+
             for (int i = 0; i < 100; i++)
             {
-                urls.Add($"http://www.altkom.pl/{i}");
+                urls.Add($"http://jsonplaceholder.typicode.com");
             }
+
+            // UnsafeDownloadFiles(urls);
+
+            SafeDownloadFiles(urls);
+
 
             // urls.ForEach(Console.WriteLine);
 
-            ParallelQuery<string> sites = urls
+            var sites = urls
                 .AsParallel()
                 .AsOrdered()
-                .WithDegreeOfParallelism(10)
+                .WithDegreeOfParallelism(4)
+                .AsSequential()
+                .ToList()
+
                 ;
-            sites.ForAll(DoLongWork);
+            sites.ForEach(DoLongWork);
 
             //urls
             //    // .Where(url => url.Contains("altkom"))
@@ -101,8 +112,8 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
             var ticks = stopTicks - startTicks;
 
             Console.WriteLine($"ticks {ticks}");
-            
-            
+
+
             // Parallel.For(0, 100, index => MyJob(index));
 
             //IList<string> urls = new List<string>
@@ -194,6 +205,34 @@ namespace Altkom.Intel.ParallelProg.ConsoleClient
 
         }
 
+        private static void SafeDownloadFiles(List<string> urls)
+        {
+            Parallel.ForEach(urls,
+                () => new WebClient(),
+                (url, loopstate, index, client) =>
+                {
+                    string content = client.DownloadString(url);
+
+                    Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} -> {content.Length}");
+
+                    return client;
+                },
+                client => Console.WriteLine("koniec"));
+        }
+
+        private static void UnsafeDownloadFiles(List<string> urls)
+        {
+            using (var client = new WebClient())
+            {
+
+                Parallel.ForEach(urls, url =>
+                {
+                    string content = client.DownloadString(url);
+
+                    Console.WriteLine($"#{Thread.CurrentThread.ManagedThreadId} -> {content.Length}");
+                });
+            }
+        }
 
         private static void MyJob(int index)
         {
